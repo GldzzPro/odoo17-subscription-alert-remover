@@ -1,3 +1,13 @@
+// Cross-browser compatibility
+const browserAPI = (function() {
+  if (typeof browser !== 'undefined') {
+    return browser; // Firefox
+  } else if (typeof chrome !== 'undefined') {
+    return chrome; // Chrome
+  }
+  throw new Error('Browser API not available');
+})();
+
 document.addEventListener('DOMContentLoaded', function() {
   const counter = document.getElementById('counter');
   const statusText = document.getElementById('status-text');
@@ -9,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let sessionBlocked = 0;
   
   // Get current tab information
-  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+  browserAPI.tabs.query({active: true, currentWindow: true}, function(tabs) {
     if (tabs.length === 0) return;
     
     currentTab = tabs[0];
@@ -34,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   // Load stored counts from storage
-  chrome.storage.local.get(['blockedCount', 'sessionCount'], function(result) {
+  browserAPI.storage.local.get(['blockedCount', 'sessionCount'], function(result) {
     const totalBlocked = result.blockedCount || 0;
     sessionBlocked = result.sessionCount || 0;
     
@@ -42,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   // Initialize session count for this popup opening
-  chrome.storage.local.set({'sessionCount': 0});
+  browserAPI.storage.local.set({'sessionCount': 0});
   
   // Function to update all counters
   function updateCounters(total, session) {
@@ -59,13 +69,13 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   // Listen for messages from content script
-  chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+  browserAPI.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     if (message.action === 'alertRemoved') {
       sessionBlocked += message.removedThisTime || 1;
       updateCounters(message.count, sessionBlocked);
       
       // Store session count
-      chrome.storage.local.set({'sessionCount': sessionBlocked});
+      browserAPI.storage.local.set({'sessionCount': sessionBlocked});
       
       // Animate the counter briefly
       counter.style.transform = 'scale(1.2)';
@@ -81,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Function to reset counter
   window.resetCounter = function() {
-    chrome.storage.local.set({
+    browserAPI.storage.local.set({
       'blockedCount': 0,
       'sessionCount': 0
     }, function() {
@@ -111,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Auto-refresh popup data every few seconds
   setInterval(function() {
-    chrome.storage.local.get(['blockedCount', 'sessionCount'], function(result) {
+    browserAPI.storage.local.get(['blockedCount', 'sessionCount'], function(result) {
       const totalBlocked = result.blockedCount || 0;
       const sessionBlocked = result.sessionCount || 0;
       
@@ -122,6 +132,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // Handle popup closing/opening
   window.addEventListener('beforeunload', function() {
     // Reset session count when popup closes
-    chrome.storage.local.set({'sessionCount': 0});
+    browserAPI.storage.local.set({'sessionCount': 0});
   });
 });
