@@ -1,0 +1,17 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="#2c3e50" stroke="#34495e" stroke-width="4"/>
+  
+  <!-- Shield icon -->
+  <path d="M64 20 L45 30 L45 55 Q45 75 64 85 Q83 75 83 55 L83 30 Z" fill="#27ae60" stroke="#2ecc71" stroke-width="2"/>
+  
+  <!-- Block symbol (diagonal line) -->
+  <line x1="40" y1="88" x2="88" y2="40" stroke="#e74c3c" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- Alert symbol (exclamation mark being blocked) -->
+  <circle cx="75" cy="52" r="3" fill="#e74c3c"/>
+  <line x1="75" y1="42" x2="75" y2="50" stroke="#e74c3c" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Text "O" for Odoo -->
+  <text x="64" y="110" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#ecf0f1">O</text>
+</svg>
