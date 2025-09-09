@@ -1,10 +1,10 @@
-// Odoo Alert Blocker - Content Script
+// Odoo Alert Blocker - Content Script (Firefox Optimized)
 // Automatically removes subscription alerts from Odoo on localhost
 
 let blockedCount = 0;
 
 // Load existing count from storage
-chrome.storage.local.get(['blockedCount'], function(result) {
+browser.storage.local.get(['blockedCount']).then(function(result) {
   blockedCount = result.blockedCount || 0;
 });
 
@@ -115,14 +115,19 @@ function removeOdooAlerts() {
     blockedCount += removedThisTime;
     
     // Store updated count
-    chrome.storage.local.set({blockedCount: blockedCount});
+    browser.storage.local.set({blockedCount: blockedCount});
     
     // Notify popup of the update
-    chrome.runtime.sendMessage({
-      action: 'alertRemoved',
-      count: blockedCount,
-      removedThisTime: removedThisTime
-    });
+    try {
+      browser.runtime.sendMessage({
+        action: 'alertRemoved',
+        count: blockedCount,
+        removedThisTime: removedThisTime
+      });
+    } catch (error) {
+      // Ignore errors if popup is not open
+      console.log('🛡️ Popup not available for message');
+    }
     
     console.log(`🛡️ Odoo Alert Blocker: Removed ${removedThisTime} alerts (Total: ${blockedCount})`);
   }
@@ -172,7 +177,7 @@ function initialize() {
     return;
   }
   
-  console.log('🛡️ Odoo Alert Blocker: Initialized on', window.location.hostname);
+  console.log('🛡️ Odoo Alert Blocker (Firefox): Initialized on', window.location.hostname);
   
   // Initial scan for alerts
   removeOdooAlerts();

@@ -1,12 +1,26 @@
-// Odoo Alert Blocker - Content Script
+// Odoo Alert Blocker - Content Script (Safari Optimized)
 // Automatically removes subscription alerts from Odoo on localhost
 
-let blockedCount = 0;
+// Use a namespace to avoid variable conflicts
+(function() {
+  'use strict';
+  
+  let blockedCount = 0;
 
-// Load existing count from storage
-chrome.storage.local.get(['blockedCount'], function(result) {
-  blockedCount = result.blockedCount || 0;
-});
+  // Safari Web Extension uses browser API similar to Firefox
+  // Load existing count from storage
+  if (typeof browser !== 'undefined' && browser.storage) {
+    browser.storage.local.get(['blockedCount']).then(function(result) {
+      blockedCount = result.blockedCount || 0;
+    }).catch(function(error) {
+      console.log('🛡️ Safari storage access error:', error);
+      blockedCount = 0;
+    });
+  } else {
+    // Fallback for older Safari versions
+    console.log('🛡️ Safari: Using localStorage fallback');
+    blockedCount = parseInt(localStorage.getItem('odoo-alert-blocker-count') || '0');
+  }
 
 // Function to remove Odoo subscription alerts
 function removeOdooAlerts() {
@@ -115,16 +129,44 @@ function removeOdooAlerts() {
     blockedCount += removedThisTime;
     
     // Store updated count
-    chrome.storage.local.set({blockedCount: blockedCount});
+    if (typeof browser !== 'undefined' && browser.storage) {
+      browser.storage.local.set({blockedCount: blockedCount}).catch(function(error) {
+        console.log('🛡️ Safari storage set error:', error);
+        // Fallback to localStorage
+        localStorage.setItem('odoo-alert-blocker-count', blockedCount.toString());
+      });
+    } else {
+      // Fallback for older Safari versions
+      localStorage.setItem('odoo-alert-blocker-count', blockedCount.toString());
+    }
     
     // Notify popup of the update
-    chrome.runtime.sendMessage({
-      action: 'alertRemoved',
-      count: blockedCount,
-      removedThisTime: removedThisTime
-    });
+    try {
+      if (typeof browser !== 'undefined' && browser.runtime) {
+        browser.runtime.sendMessage({
+          action: 'alertRemoved',
+          count: blockedCount,
+          removedThisTime: removedThisTime
+        }).catch(function(error) {
+          console.log('🛡️ Safari messaging error:', error);
+        });
+      } else {
+        // Safari fallback - use custom events
+        const event = new CustomEvent('odooAlertBlocked', {
+          detail: {
+            action: 'alertRemoved',
+            count: blockedCount,
+            removedThisTime: removedThisTime
+          }
+        });
+        document.dispatchEvent(event);
+      }
+    } catch (error) {
+      // Ignore errors if popup is not open
+      console.log('🛡️ Popup not available for message');
+    }
     
-    console.log(`🛡️ Odoo Alert Blocker: Removed ${removedThisTime} alerts (Total: ${blockedCount})`);
+    console.log(`🛡️ Odoo Alert Blocker (Safari): Removed ${removedThisTime} alerts (Total: ${blockedCount})`);
   }
 }
 
@@ -172,7 +214,7 @@ function initialize() {
     return;
   }
   
-  console.log('🛡️ Odoo Alert Blocker: Initialized on', window.location.hostname);
+  console.log('🛡️ Odoo Alert Blocker (Safari): Initialized on', window.location.hostname);
   
   // Initial scan for alerts
   removeOdooAlerts();
@@ -197,3 +239,5 @@ if (document.readyState === 'loading') {
 } else {
   initialize();
 }
+
+})(); // End of IIFE

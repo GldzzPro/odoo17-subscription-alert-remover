@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Odoo Alert Blocker",
+  "version": "1.0.0",
+  "description": "Automatically removes subscription alerts from Odoo on localhost",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "http://localhost/*",
+    "https://localhost/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["http://localhost/*", "https://localhost/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Odoo Alert Blocker",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
