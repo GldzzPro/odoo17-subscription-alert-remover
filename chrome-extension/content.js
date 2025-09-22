@@ -8,55 +8,9 @@ chrome.storage.local.get(['blockedCount'], function(result) {
   blockedCount = result.blockedCount || 0;
 });
 
-// Function to remove Odoo subscription alerts
+// Function to remove Odoo blocking overlays
 function removeOdooAlerts() {
   let removedThisTime = 0;
-  
-  // Common selectors for Odoo subscription alerts
-  const alertSelectors = [
-    // Generic alert/warning selectors
-    '.alert:contains("subscription")',
-    '.alert:contains("upgrade")',
-    '.alert:contains("trial")',
-    '.warning:contains("subscription")',
-    '.notification:contains("subscription")',
-    
-    // Specific Odoo selectors (these may need to be updated based on Odoo version)
-    '.o_dialog_warning:contains("subscription")',
-    '.o_notification:contains("subscription")',
-    '.o_notification:contains("upgrade")',
-    '.modal:contains("subscription")',
-    '.modal:contains("upgrade")',
-    
-    // Bootstrap alert classes commonly used in Odoo
-    '.alert-warning:contains("subscription")',
-    '.alert-info:contains("upgrade")',
-    '.alert-danger:contains("trial")',
-    
-    // Custom alert patterns that might contain subscription warnings
-    '[class*="alert"]:contains("subscription")',
-    '[class*="warning"]:contains("subscription")',
-    '[class*="notification"]:contains("subscription")'
-  ];
-  
-  // Function to check if element contains subscription-related text
-  function containsSubscriptionText(element) {
-    const text = element.textContent.toLowerCase();
-    const keywords = [
-      'subscription',
-      'upgrade',
-      'trial',
-      'enterprise',
-      'license',
-      'expired',
-      'renew',
-      'billing',
-      'payment',
-      'plan'
-    ];
-    
-    return keywords.some(keyword => text.includes(keyword));
-  }
   
   // Function to check if element has blocking overlay styles
   function hasBlockingOverlayStyles(element) {
@@ -69,45 +23,43 @@ function removeOdooAlerts() {
            style.zIndex === '1100';
   }
   
-  // Remove alerts using CSS selectors with :contains pseudo-selector workaround
-  alertSelectors.forEach(selector => {
-    // Since :contains is not available in querySelector, we'll search manually
-    const baseSelector = selector.split(':contains')[0];
-    const elements = document.querySelectorAll(baseSelector);
+  // Function to check if element has modal/dialog blocking characteristics
+  function hasModalBlockingStyles(element) {
+    const style = window.getComputedStyle(element);
+    const rect = element.getBoundingClientRect();
     
-    elements.forEach(element => {
-      if (containsSubscriptionText(element)) {
-        // Check if parent div has blocking overlay styles
-        const parent = element.parentElement;
-        if (parent && hasBlockingOverlayStyles(parent)) {
-          parent.remove();
-          removedThisTime++;
-          console.log('🛡️ Blocked Odoo subscription alert with blocking parent overlay');
-        } else {
-          element.remove();
-          removedThisTime++;
-          console.log('🛡️ Blocked Odoo subscription alert:', element.textContent.trim().substring(0, 100));
-        }
-      }
-    });
-  });
+    // Check for modal-like positioning and high z-index
+    return (style.position === 'fixed' || style.position === 'absolute') &&
+           parseInt(style.zIndex) >= 1000 &&
+           rect.width > 200 && rect.height > 100; // Reasonable modal size
+  }
   
-  // Also check for modal dialogs and overlays
-  const modals = document.querySelectorAll('.modal, .o_dialog, [class*="dialog"]');
-  modals.forEach(modal => {
-    if (containsSubscriptionText(modal)) {
-      modal.remove();
+  // Function to check if element contains database_expiration_panel
+  function containsDatabaseExpirationPanel(element) {
+    return element.querySelector('.database_expiration_panel') !== null;
+  }
+  
+  // Scan all elements for blocking overlay styles that contain database_expiration_panel
+  const allElements = document.querySelectorAll('*');
+  allElements.forEach(element => {
+    if (hasBlockingOverlayStyles(element) && containsDatabaseExpirationPanel(element)) {
+      element.remove();
       removedThisTime++;
-      console.log('🛡️ Blocked Odoo subscription modal');
+      console.log('🛡️ Blocked element with blocking overlay styles containing database_expiration_panel');
+    } else if (hasModalBlockingStyles(element) && containsDatabaseExpirationPanel(element)) {
+      // Additional check for modal-like elements that might be blocking
+      const hasCloseButton = element.querySelector('[class*="close"], [class*="dismiss"], .btn-close, .fa-times, .fa-close');
+      const hasModalClasses = element.classList.contains('modal') || 
+                             element.classList.contains('dialog') ||
+                             element.classList.contains('o_dialog') ||
+                             element.classList.contains('popup');
+      
+      if (hasCloseButton || hasModalClasses) {
+        element.remove();
+        removedThisTime++;
+        console.log('🛡️ Blocked modal-like blocking element containing database_expiration_panel');
+      }
     }
-  });
-  
-  // Check for any elements with specific subscription-related attributes
-  const elementsWithDataAttrs = document.querySelectorAll('[data-original-title*="subscription"], [title*="subscription"], [aria-label*="subscription"]');
-  elementsWithDataAttrs.forEach(element => {
-    element.remove();
-    removedThisTime++;
-    console.log('🛡️ Blocked Odoo subscription element with data attributes');
   });
   
   // Update counter if any alerts were removed
